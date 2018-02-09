@@ -1,10 +1,10 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"github.com/gitsen/playground/protos"
 	"google.golang.org/grpc"
+	"io"
 	"log"
 	"net"
 )
@@ -12,8 +12,18 @@ import (
 type ChatServer struct {
 }
 
-func (c *ChatServer) Talk(ctx context.Context, req *chat.ChatRequest) (*chat.ChatResponse, error) {
-	return &chat.ChatResponse{Message: "Hi There"}, nil
+func (c *ChatServer) Talk(stream chat.Chat_TalkServer) error {
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return err
+		}
+		stream.Send(&chat.ChatResponse{Message: fmt.Sprintf("Echoing %s", req.Message)})
+	}
+	<-stream.Context().Done()
+	return stream.Context().Err()
 }
 
 func (c *ChatServer) Run() {
