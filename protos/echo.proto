@@ -1,15 +1,23 @@
 syntax = "proto3";
 
-package Echo;
+package Chat;
 
-message EchoRequest {
+message RegisterRequest {
+    string clientId = 1;
+}
+
+message RegisterResponse {
+}
+
+message BroadcastRequest {
     string message = 1;
 }
 
-message EchoResponse {
-    string message = 2;
+message BroadcastResponse {
+    string message = 1;
 }
 
-service Echo {
-    rpc Echo(stream EchoRequest) returns (stream EchoResponse) {}
+service Chat {
+    rpc Register(RegisterRequest) returns (RegisterResponse) {}
+    rpc Broadcast(stream BroadcastRequest) returns (stream BroadcastResponse) {}
 }

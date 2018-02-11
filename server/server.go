@@ -3,17 +3,36 @@ package server
 import (
 	"fmt"
 	"github.com/gitsen/playground/protos"
+	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"io"
 	"log"
 	"net"
+	"sync"
 )
 
 const clientheader = "x-gitsen-client-header"
 
+type clientBroadcast struct {
+	ClientId string
+	resp     Chat.BroadcastResponse
+}
+
 type ChatServer struct {
+	clients       map[string]chan Chat.BroadcastResponse
+	broadcastChan chan clientBroadcast
+	streamsMtx    sync.RWMutex
+}
+
+func New() *ChatServer {
+	c := &ChatServer{
+		clients:       make(map[string]chan Chat.BroadcastResponse),
+		broadcastChan: make(chan clientBroadcast, 100),
+	}
+	go c.broadcast()
+	return c
 }
 
 func getClientId(ctx context.Context) string {
@@ -25,8 +44,40 @@ func getClientId(ctx context.Context) string {
 	return ""
 }
 
-func (c *ChatServer) Echo(stream Echo.Echo_EchoServer) error {
+func (c *ChatServer) Register(ctx context.Context, req *Chat.RegisterRequest) (*Chat.RegisterResponse, error) {
+	if req.ClientId == "" {
+		return nil, errors.New("No client Id passed in")
+	}
+	c.streamsMtx.Lock()
+	c.clients[req.ClientId] = make(chan Chat.BroadcastResponse, 100)
+	c.streamsMtx.Unlock()
+	log.Printf("Registered client %s", req.ClientId)
+	return &Chat.RegisterResponse{}, nil
+}
 
+func (c *ChatServer) broadcast() {
+	for {
+		select {
+		case res := <-c.broadcastChan:
+			c.streamsMtx.RLock()
+			for c, s := range c.clients {
+				if res.ClientId == c {
+					continue
+				}
+				log.Printf("Broadcasting to %s", c)
+				s <- res.resp
+			}
+			c.streamsMtx.RUnlock()
+		}
+	}
+}
+
+func (c *ChatServer) Broadcast(stream Chat.Chat_BroadcastServer) error {
+	clientId := getClientId(stream.Context())
+	if clientId == "" {
+		return errors.New("Client not registered")
+	}
+	go c.sendBroadcastMsg(clientId, stream)
 	for {
 		req, err := stream.Recv()
 		if err == io.EOF {
@@ -34,10 +85,29 @@ func (c *ChatServer) Echo(stream Echo.Echo_EchoServer) error {
 		} else if err != nil {
 			return err
 		}
-		stream.Send(&Echo.EchoResponse{Message: fmt.Sprintf("Hi %s Echoing %s", getClientId(stream.Context()), req.Message)})
+
+		c.broadcastChan <- clientBroadcast{ClientId: clientId, resp: Chat.BroadcastResponse{Message: fmt.Sprintf("%s : %s", clientId, req.Message)}}
 	}
 	<-stream.Context().Done()
 	return stream.Context().Err()
+}
+
+func (c *ChatServer) sendBroadcastMsg(clientId string, stream Chat.Chat_BroadcastServer) {
+	for {
+		c.streamsMtx.RLock()
+		cc, ok := c.clients[clientId]
+		c.streamsMtx.RUnlock()
+		if !ok {
+			log.Printf("Client not registered %s", clientId)
+			return
+		}
+		select {
+		case <-stream.Context().Done():
+			return
+		case msg := <-cc:
+			stream.Send(&msg)
+		}
+	}
 }
 
 func (c *ChatServer) Run() {
@@ -46,6 +116,6 @@ func (c *ChatServer) Run() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	srv := grpc.NewServer()
-	Echo.RegisterEchoServer(srv, c)
+	Chat.RegisterChatServer(srv, c)
 	srv.Serve(lis)
 }

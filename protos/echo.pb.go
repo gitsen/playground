@@ -2,16 +2,18 @@
 // source: protos/echo.proto
 
 /*
-Package Echo is a generated protocol buffer package.
+Package Chat is a generated protocol buffer package.
 
 It is generated from these files:
 	protos/echo.proto
 
 It has these top-level messages:
-	EchoRequest
-	EchoResponse
+	RegisterRequest
+	RegisterResponse
+	BroadcastRequest
+	BroadcastResponse
 */
-package Echo
+package Chat
 
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
@@ -33,32 +35,56 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-type EchoRequest struct {
+type RegisterRequest struct {
+	ClientId string `protobuf:"bytes,1,opt,name=clientId" json:"clientId,omitempty"`
+}
+
+func (m *RegisterRequest) Reset()                    { *m = RegisterRequest{} }
+func (m *RegisterRequest) String() string            { return proto.CompactTextString(m) }
+func (*RegisterRequest) ProtoMessage()               {}
+func (*RegisterRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+
+func (m *RegisterRequest) GetClientId() string {
+	if m != nil {
+		return m.ClientId
+	}
+	return ""
+}
+
+type RegisterResponse struct {
+}
+
+func (m *RegisterResponse) Reset()                    { *m = RegisterResponse{} }
+func (m *RegisterResponse) String() string            { return proto.CompactTextString(m) }
+func (*RegisterResponse) ProtoMessage()               {}
+func (*RegisterResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+type BroadcastRequest struct {
 	Message string `protobuf:"bytes,1,opt,name=message" json:"message,omitempty"`
 }
 
-func (m *EchoRequest) Reset()                    { *m = EchoRequest{} }
-func (m *EchoRequest) String() string            { return proto.CompactTextString(m) }
-func (*EchoRequest) ProtoMessage()               {}
-func (*EchoRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *BroadcastRequest) Reset()                    { *m = BroadcastRequest{} }
+func (m *BroadcastRequest) String() string            { return proto.CompactTextString(m) }
+func (*BroadcastRequest) ProtoMessage()               {}
+func (*BroadcastRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
-func (m *EchoRequest) GetMessage() string {
+func (m *BroadcastRequest) GetMessage() string {
 	if m != nil {
 		return m.Message
 	}
 	return ""
 }
 
-type EchoResponse struct {
-	Message string `protobuf:"bytes,2,opt,name=message" json:"message,omitempty"`
+type BroadcastResponse struct {
+	Message string `protobuf:"bytes,1,opt,name=message" json:"message,omitempty"`
 }
 
-func (m *EchoResponse) Reset()                    { *m = EchoResponse{} }
-func (m *EchoResponse) String() string            { return proto.CompactTextString(m) }
-func (*EchoResponse) ProtoMessage()               {}
-func (*EchoResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (m *BroadcastResponse) Reset()                    { *m = BroadcastResponse{} }
+func (m *BroadcastResponse) String() string            { return proto.CompactTextString(m) }
+func (*BroadcastResponse) ProtoMessage()               {}
+func (*BroadcastResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
-func (m *EchoResponse) GetMessage() string {
+func (m *BroadcastResponse) GetMessage() string {
 	if m != nil {
 		return m.Message
 	}
@@ -66,8 +92,10 @@ func (m *EchoResponse) GetMessage() string {
 }
 
 func init() {
-	proto.RegisterType((*EchoRequest)(nil), "Echo.EchoRequest")
-	proto.RegisterType((*EchoResponse)(nil), "Echo.EchoResponse")
+	proto.RegisterType((*RegisterRequest)(nil), "Chat.RegisterRequest")
+	proto.RegisterType((*RegisterResponse)(nil), "Chat.RegisterResponse")
+	proto.RegisterType((*BroadcastRequest)(nil), "Chat.BroadcastRequest")
+	proto.RegisterType((*BroadcastResponse)(nil), "Chat.BroadcastResponse")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -78,95 +106,129 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for Echo service
+// Client API for Chat service
 
-type EchoClient interface {
-	Echo(ctx context.Context, opts ...grpc.CallOption) (Echo_EchoClient, error)
+type ChatClient interface {
+	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
+	Broadcast(ctx context.Context, opts ...grpc.CallOption) (Chat_BroadcastClient, error)
 }
 
-type echoClient struct {
+type chatClient struct {
 	cc *grpc.ClientConn
 }
 
-func NewEchoClient(cc *grpc.ClientConn) EchoClient {
-	return &echoClient{cc}
+func NewChatClient(cc *grpc.ClientConn) ChatClient {
+	return &chatClient{cc}
 }
 
-func (c *echoClient) Echo(ctx context.Context, opts ...grpc.CallOption) (Echo_EchoClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_Echo_serviceDesc.Streams[0], c.cc, "/Echo.Echo/Echo", opts...)
+func (c *chatClient) Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error) {
+	out := new(RegisterResponse)
+	err := grpc.Invoke(ctx, "/Chat.Chat/Register", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &echoEchoClient{stream}
+	return out, nil
+}
+
+func (c *chatClient) Broadcast(ctx context.Context, opts ...grpc.CallOption) (Chat_BroadcastClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_Chat_serviceDesc.Streams[0], c.cc, "/Chat.Chat/Broadcast", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &chatBroadcastClient{stream}
 	return x, nil
 }
 
-type Echo_EchoClient interface {
-	Send(*EchoRequest) error
-	Recv() (*EchoResponse, error)
+type Chat_BroadcastClient interface {
+	Send(*BroadcastRequest) error
+	Recv() (*BroadcastResponse, error)
 	grpc.ClientStream
 }
 
-type echoEchoClient struct {
+type chatBroadcastClient struct {
 	grpc.ClientStream
 }
 
-func (x *echoEchoClient) Send(m *EchoRequest) error {
+func (x *chatBroadcastClient) Send(m *BroadcastRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *echoEchoClient) Recv() (*EchoResponse, error) {
-	m := new(EchoResponse)
+func (x *chatBroadcastClient) Recv() (*BroadcastResponse, error) {
+	m := new(BroadcastResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-// Server API for Echo service
+// Server API for Chat service
 
-type EchoServer interface {
-	Echo(Echo_EchoServer) error
+type ChatServer interface {
+	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
+	Broadcast(Chat_BroadcastServer) error
 }
 
-func RegisterEchoServer(s *grpc.Server, srv EchoServer) {
-	s.RegisterService(&_Echo_serviceDesc, srv)
+func RegisterChatServer(s *grpc.Server, srv ChatServer) {
+	s.RegisterService(&_Chat_serviceDesc, srv)
 }
 
-func _Echo_Echo_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(EchoServer).Echo(&echoEchoServer{stream})
+func _Chat_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServer).Register(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Chat.Chat/Register",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServer).Register(ctx, req.(*RegisterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-type Echo_EchoServer interface {
-	Send(*EchoResponse) error
-	Recv() (*EchoRequest, error)
+func _Chat_Broadcast_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ChatServer).Broadcast(&chatBroadcastServer{stream})
+}
+
+type Chat_BroadcastServer interface {
+	Send(*BroadcastResponse) error
+	Recv() (*BroadcastRequest, error)
 	grpc.ServerStream
 }
 
-type echoEchoServer struct {
+type chatBroadcastServer struct {
 	grpc.ServerStream
 }
 
-func (x *echoEchoServer) Send(m *EchoResponse) error {
+func (x *chatBroadcastServer) Send(m *BroadcastResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *echoEchoServer) Recv() (*EchoRequest, error) {
-	m := new(EchoRequest)
+func (x *chatBroadcastServer) Recv() (*BroadcastRequest, error) {
+	m := new(BroadcastRequest)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-var _Echo_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "Echo.Echo",
-	HandlerType: (*EchoServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+var _Chat_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "Chat.Chat",
+	HandlerType: (*ChatServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Register",
+			Handler:    _Chat_Register_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "Echo",
-			Handler:       _Echo_Echo_Handler,
+			StreamName:    "Broadcast",
+			Handler:       _Chat_Broadcast_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},
@@ -177,13 +239,17 @@ var _Echo_serviceDesc = grpc.ServiceDesc{
 func init() { proto.RegisterFile("protos/echo.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 128 bytes of a gzipped FileDescriptorProto
+	// 192 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x2c, 0x28, 0xca, 0x2f,
-	0xc9, 0x2f, 0xd6, 0x4f, 0x4d, 0xce, 0xc8, 0xd7, 0x03, 0xb3, 0x85, 0x58, 0x5c, 0x93, 0x33, 0xf2,
-	0x95, 0xd4, 0xb9, 0xb8, 0x41, 0x74, 0x50, 0x6a, 0x61, 0x69, 0x6a, 0x71, 0x89, 0x90, 0x04, 0x17,
-	0x7b, 0x6e, 0x6a, 0x71, 0x71, 0x62, 0x7a, 0xaa, 0x04, 0xa3, 0x02, 0xa3, 0x06, 0x67, 0x10, 0x8c,
-	0xab, 0xa4, 0xc1, 0xc5, 0x03, 0x51, 0x58, 0x5c, 0x90, 0x9f, 0x57, 0x9c, 0x8a, 0xac, 0x92, 0x09,
-	0x45, 0xa5, 0x91, 0x35, 0x17, 0xd8, 0x68, 0x21, 0x63, 0x28, 0x2d, 0xa8, 0x07, 0xa2, 0xf4, 0x90,
-	0xac, 0x91, 0x12, 0x42, 0x16, 0x82, 0x18, 0xa8, 0xc4, 0xa0, 0xc1, 0x68, 0xc0, 0x98, 0xc4, 0x06,
-	0x76, 0x9c, 0x31, 0x20, 0x00, 0x00, 0xff, 0xff, 0xdd, 0xda, 0x69, 0xed, 0xb1, 0x00, 0x00, 0x00,
+	0xc9, 0x2f, 0xd6, 0x4f, 0x4d, 0xce, 0xc8, 0xd7, 0x03, 0xb3, 0x85, 0x58, 0x9c, 0x33, 0x12, 0x4b,
+	0x94, 0x74, 0xb9, 0xf8, 0x83, 0x52, 0xd3, 0x33, 0x8b, 0x4b, 0x52, 0x8b, 0x82, 0x52, 0x0b, 0x4b,
+	0x53, 0x8b, 0x4b, 0x84, 0xa4, 0xb8, 0x38, 0x92, 0x73, 0x32, 0x53, 0xf3, 0x4a, 0x3c, 0x53, 0x24,
+	0x18, 0x15, 0x18, 0x35, 0x38, 0x83, 0xe0, 0x7c, 0x25, 0x21, 0x2e, 0x01, 0x84, 0xf2, 0xe2, 0x82,
+	0xfc, 0xbc, 0xe2, 0x54, 0x25, 0x1d, 0x2e, 0x01, 0xa7, 0xa2, 0xfc, 0xc4, 0x94, 0xe4, 0xc4, 0xe2,
+	0x12, 0x98, 0x19, 0x12, 0x5c, 0xec, 0xb9, 0xa9, 0xc5, 0xc5, 0x89, 0xe9, 0xa9, 0x50, 0x23, 0x60,
+	0x5c, 0x25, 0x5d, 0x2e, 0x41, 0x24, 0xd5, 0x10, 0x23, 0x70, 0x2b, 0x37, 0x6a, 0x67, 0xe4, 0x02,
+	0x3b, 0x54, 0xc8, 0x9a, 0x8b, 0x03, 0x66, 0xb3, 0x90, 0xa8, 0x1e, 0x48, 0x48, 0x0f, 0xcd, 0xe1,
+	0x52, 0x62, 0xe8, 0xc2, 0x50, 0x07, 0x32, 0x08, 0x39, 0x71, 0x71, 0xc2, 0x2d, 0x15, 0x82, 0x2a,
+	0x43, 0x77, 0xb3, 0x94, 0x38, 0x86, 0x38, 0x4c, 0xbf, 0x06, 0xa3, 0x01, 0x63, 0x12, 0x1b, 0x38,
+	0xd8, 0x8c, 0x01, 0x01, 0x00, 0x00, 0xff, 0xff, 0x5e, 0xb0, 0x71, 0x26, 0x4b, 0x01, 0x00, 0x00,
 }

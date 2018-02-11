@@ -4,5 +4,4 @@ install: protos
 
 .PHONY: protos
 protos:
-    rm -rf protos/echo.pb.go && \
-	protoc --go_out="plugins=grpc:." protos/echo.proto
+	rm -rf protos/echo.pb.go && protoc --go_out="plugins=grpc:." protos/echo.proto

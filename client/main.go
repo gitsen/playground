@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
@@ -9,7 +10,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"io"
 	"log"
-	"time"
+	"os"
 )
 
 const clientheader = "x-gitsen-client-header"
@@ -27,33 +28,45 @@ func main() {
 	if err != nil {
 		fmt.Printf("\n Error connecting %+v", err)
 	}
-	c := Echo.NewEchoClient(conn)
+	c := Chat.NewChatClient(conn)
 	ctx := context.Background()
 	md := metadata.New(map[string]string{clientheader: *clientId})
 	ctx = metadata.NewOutgoingContext(ctx, md)
-
-	stream, err := c.Echo(ctx)
-	if err != nil {
-		fmt.Printf("\n Invalid response %+v", err)
-	}
-	stream.Send(&Echo.EchoRequest{Message: "Hi"})
+	c.Register(ctx, &Chat.RegisterRequest{ClientId: *clientId})
 	waitc := make(chan struct{})
-	go func() {
-		for {
-			in, err := stream.Recv()
-			if err == io.EOF {
-				// read done.
-				close(waitc)
-				return
-			}
-			if err != nil {
-				log.Fatalf("Failed to receive a note : %v", err)
-			}
-			log.Printf("Got message %s", in.Message)
-			time.Sleep(time.Second * 5)
-			stream.Send(&Echo.EchoRequest{Message: "Hi"})
-		}
-	}()
-
+	go chat(c, ctx, waitc)
 	<-waitc
+}
+
+func send(stream Chat.Chat_BroadcastClient) {
+	sc := bufio.NewScanner(os.Stdin)
+	for {
+		fmt.Print("> ")
+		if sc.Scan() {
+			stream.Send(&Chat.BroadcastRequest{Message: sc.Text()})
+		} else {
+			panic(fmt.Sprintf("Error reading from terminal %+v", sc.Err()))
+		}
+	}
+}
+
+func chat(c Chat.ChatClient, ctx context.Context, waitc chan struct{}) {
+	stream, err := c.Broadcast(ctx)
+	if err != nil {
+		fmt.Printf("\n Bad response, %+v", err)
+		close(waitc)
+		return
+	}
+	go send(stream)
+	for {
+		resp, err := stream.Recv()
+		if err == io.EOF {
+			close(waitc)
+			return
+		}
+		if err != nil {
+			log.Fatalf("Receipt failed : %v", err)
+		}
+		fmt.Printf("\n> %s\n> ", resp.Message)
+	}
 }
