@@ -1,7 +1,8 @@
 .PHONY: install
-install: protos/chat.pb.go
+install: protos
 	go install .
 
-protos/chat.pb.go:
-    rm -rf protos/chat.pb.go && \
-	protoc --go_out="plugins=grpc:." protos/chat.proto
+.PHONY: protos
+protos:
+    rm -rf protos/echo.pb.go && \
+	protoc --go_out="plugins=grpc:." protos/echo.proto

@@ -3,16 +3,30 @@ package server
 import (
 	"fmt"
 	"github.com/gitsen/playground/protos"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"io"
 	"log"
 	"net"
 )
 
+const clientheader = "x-gitsen-client-header"
+
 type ChatServer struct {
 }
 
-func (c *ChatServer) Talk(stream chat.Chat_TalkServer) error {
+func getClientId(ctx context.Context) string {
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		if hdr, ok := md[clientheader]; ok {
+			return hdr[0]
+		}
+	}
+	return ""
+}
+
+func (c *ChatServer) Echo(stream Echo.Echo_EchoServer) error {
+
 	for {
 		req, err := stream.Recv()
 		if err == io.EOF {
@@ -20,7 +34,7 @@ func (c *ChatServer) Talk(stream chat.Chat_TalkServer) error {
 		} else if err != nil {
 			return err
 		}
-		stream.Send(&chat.ChatResponse{Message: fmt.Sprintf("Echoing %s", req.Message)})
+		stream.Send(&Echo.EchoResponse{Message: fmt.Sprintf("Hi %s Echoing %s", getClientId(stream.Context()), req.Message)})
 	}
 	<-stream.Context().Done()
 	return stream.Context().Err()
@@ -32,6 +46,6 @@ func (c *ChatServer) Run() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	srv := grpc.NewServer()
-	chat.RegisterChatServer(srv, c)
+	Echo.RegisterEchoServer(srv, c)
 	srv.Serve(lis)
 }
