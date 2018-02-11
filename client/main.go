@@ -39,6 +39,7 @@ func main() {
 }
 
 func send(stream Chat.Chat_BroadcastClient) {
+	fmt.Println("Happy chatting...")
 	sc := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Print("> ")

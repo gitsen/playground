@@ -21,9 +21,9 @@ type clientBroadcast struct {
 }
 
 type ChatServer struct {
-	clients       map[string]chan Chat.BroadcastResponse
-	broadcastChan chan clientBroadcast
-	streamsMtx    sync.RWMutex
+	clients           map[string]chan Chat.BroadcastResponse
+	broadcastChan     chan clientBroadcast
+	clientStreamsLock sync.RWMutex
 }
 
 func New() *ChatServer {
@@ -48,9 +48,9 @@ func (c *ChatServer) Register(ctx context.Context, req *Chat.RegisterRequest) (*
 	if req.ClientId == "" {
 		return nil, errors.New("No client Id passed in")
 	}
-	c.streamsMtx.Lock()
+	c.clientStreamsLock.Lock()
 	c.clients[req.ClientId] = make(chan Chat.BroadcastResponse, 100)
-	c.streamsMtx.Unlock()
+	c.clientStreamsLock.Unlock()
 	log.Printf("Registered client %s", req.ClientId)
 	return &Chat.RegisterResponse{}, nil
 }
@@ -59,7 +59,7 @@ func (c *ChatServer) broadcast() {
 	for {
 		select {
 		case res := <-c.broadcastChan:
-			c.streamsMtx.RLock()
+			c.clientStreamsLock.RLock()
 			for c, s := range c.clients {
 				if res.ClientId == c {
 					continue
@@ -67,7 +67,7 @@ func (c *ChatServer) broadcast() {
 				log.Printf("Broadcasting to %s", c)
 				s <- res.resp
 			}
-			c.streamsMtx.RUnlock()
+			c.clientStreamsLock.RUnlock()
 		}
 	}
 }
@@ -94,9 +94,9 @@ func (c *ChatServer) Broadcast(stream Chat.Chat_BroadcastServer) error {
 
 func (c *ChatServer) sendBroadcastMsg(clientId string, stream Chat.Chat_BroadcastServer) {
 	for {
-		c.streamsMtx.RLock()
+		c.clientStreamsLock.RLock()
 		cc, ok := c.clients[clientId]
-		c.streamsMtx.RUnlock()
+		c.clientStreamsLock.RUnlock()
 		if !ok {
 			log.Printf("Client not registered %s", clientId)
 			return
