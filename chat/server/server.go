@@ -16,8 +16,9 @@ import (
 const clientheader = "x-gitsen-client-header"
 
 type clientBroadcast struct {
-	ClientId string
-	resp     Chat.BroadcastResponse
+	ClientId   string
+	resp       Chat.BroadcastResponse
+	ToClientId string
 }
 
 type ChatServer struct {
@@ -60,12 +61,20 @@ func (c *ChatServer) broadcast() {
 		select {
 		case res := <-c.broadcastChan:
 			c.clientStreamsLock.RLock()
-			for c, s := range c.clients {
-				if res.ClientId == c {
-					continue
+			if res.ToClientId != "" {
+				if s, ok := c.clients[res.ToClientId]; ok {
+					s <- res.resp
+				} else {
+					log.Printf("Bad client id to send message to %s", res.ToClientId)
 				}
-				log.Printf("Broadcasting to %s", c)
-				s <- res.resp
+			} else {
+				for c, s := range c.clients {
+					if res.ClientId == c {
+						continue
+					}
+					log.Printf("Broadcasting to %s", c)
+					s <- res.resp
+				}
 			}
 			c.clientStreamsLock.RUnlock()
 		}
@@ -85,8 +94,7 @@ func (c *ChatServer) Broadcast(stream Chat.Chat_BroadcastServer) error {
 		} else if err != nil {
 			return err
 		}
-
-		c.broadcastChan <- clientBroadcast{ClientId: clientId, resp: Chat.BroadcastResponse{Message: fmt.Sprintf("%s : %s", clientId, req.Message)}}
+		c.broadcastChan <- clientBroadcast{ClientId: clientId, resp: Chat.BroadcastResponse{Message: fmt.Sprintf("%s : %s", clientId, req.Message)}, ToClientId: req.ClientID}
 	}
 	<-stream.Context().Done()
 	return stream.Context().Err()
