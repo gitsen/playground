@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/gitsen/playground/server"
+	"github.com/gitsen/playground/chat/server"
 )
 
 func main() {

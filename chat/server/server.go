@@ -2,7 +2,7 @@ package server
 
 import (
 	"fmt"
-	"github.com/gitsen/playground/protos"
+	"github.com/gitsen/playground/chat/protos"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"

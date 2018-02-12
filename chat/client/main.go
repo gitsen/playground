@@ -5,7 +5,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/gitsen/playground/protos"
+	"github.com/gitsen/playground/chat/protos"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"io"
