@@ -39,7 +39,7 @@ func main() {
 	<-waitc
 }
 
-func send(stream Chat.Chat_BroadcastClient) {
+func send(stream Chat.Chat_ChatClient) {
 	fmt.Println("Happy chatting...")
 	sc := bufio.NewScanner(os.Stdin)
 	for {
@@ -48,9 +48,9 @@ func send(stream Chat.Chat_BroadcastClient) {
 			text := sc.Text()
 			if strings.Index(text, "@") == 0 {
 				parts := strings.Split(sc.Text(), " ")
-				stream.Send(&Chat.BroadcastRequest{Message: strings.Join(parts[1:], " "), ClientID: parts[0][1:]})
+				stream.Send(&Chat.ChatRequest{Message: strings.Join(parts[1:], " "), ClientID: parts[0][1:]})
 			} else {
-				stream.Send(&Chat.BroadcastRequest{Message: text})
+				stream.Send(&Chat.ChatRequest{Message: text})
 			}
 
 		} else {
@@ -60,7 +60,7 @@ func send(stream Chat.Chat_BroadcastClient) {
 }
 
 func chat(c Chat.ChatClient, ctx context.Context, waitc chan struct{}) {
-	stream, err := c.Broadcast(ctx)
+	stream, err := c.Chat(ctx)
 	if err != nil {
 		fmt.Printf("\n Bad response, %+v", err)
 		close(waitc)

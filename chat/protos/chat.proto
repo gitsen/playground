@@ -9,17 +9,17 @@ message RegisterRequest {
 message RegisterResponse {
 }
 
-message BroadcastRequest {
+message ChatRequest {
     string message = 1;
     string clientID = 2;
 }
 
-message BroadcastResponse {
+message ChatResponse {
     string message = 1;
     string clientId = 2;
 }
 
 service Chat {
-    rpc Register(RegisterRequest) returns (RegisterResponse) {}
-    rpc Broadcast(stream BroadcastRequest) returns (stream BroadcastResponse) {}
+    rpc Register (RegisterRequest) returns (RegisterResponse) {}
+    rpc Chat (stream ChatRequest) returns (stream ChatResponse) {}
 }

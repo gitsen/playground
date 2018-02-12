@@ -17,19 +17,19 @@ const clientheader = "x-gitsen-client-header"
 
 type clientBroadcast struct {
 	ClientId   string
-	resp       Chat.BroadcastResponse
+	resp       Chat.ChatResponse
 	ToClientId string
 }
 
 type ChatServer struct {
-	clients           map[string]chan Chat.BroadcastResponse
+	clients           map[string]chan Chat.ChatResponse
 	broadcastChan     chan clientBroadcast
 	clientStreamsLock sync.RWMutex
 }
 
 func New() *ChatServer {
 	c := &ChatServer{
-		clients:       make(map[string]chan Chat.BroadcastResponse),
+		clients:       make(map[string]chan Chat.ChatResponse),
 		broadcastChan: make(chan clientBroadcast, 100),
 	}
 	go c.broadcast()
@@ -50,7 +50,7 @@ func (c *ChatServer) Register(ctx context.Context, req *Chat.RegisterRequest) (*
 		return nil, errors.New("No client Id passed in")
 	}
 	c.clientStreamsLock.Lock()
-	c.clients[req.ClientId] = make(chan Chat.BroadcastResponse, 100)
+	c.clients[req.ClientId] = make(chan Chat.ChatResponse, 100)
 	c.clientStreamsLock.Unlock()
 	log.Printf("Registered client %s", req.ClientId)
 	return &Chat.RegisterResponse{}, nil
@@ -81,7 +81,7 @@ func (c *ChatServer) broadcast() {
 	}
 }
 
-func (c *ChatServer) Broadcast(stream Chat.Chat_BroadcastServer) error {
+func (c *ChatServer) Chat(stream Chat.Chat_ChatServer) error {
 	clientId := getClientId(stream.Context())
 	if clientId == "" {
 		return errors.New("Client not registered")
@@ -94,13 +94,13 @@ func (c *ChatServer) Broadcast(stream Chat.Chat_BroadcastServer) error {
 		} else if err != nil {
 			return err
 		}
-		c.broadcastChan <- clientBroadcast{ClientId: clientId, resp: Chat.BroadcastResponse{Message: fmt.Sprintf("%s : %s", clientId, req.Message)}, ToClientId: req.ClientID}
+		c.broadcastChan <- clientBroadcast{ClientId: clientId, resp: Chat.ChatResponse{Message: fmt.Sprintf("%s : %s", clientId, req.Message)}, ToClientId: req.ClientID}
 	}
 	<-stream.Context().Done()
 	return stream.Context().Err()
 }
 
-func (c *ChatServer) sendBroadcastMsg(clientId string, stream Chat.Chat_BroadcastServer) {
+func (c *ChatServer) sendBroadcastMsg(clientId string, stream Chat.Chat_ChatServer) {
 	for {
 		c.clientStreamsLock.RLock()
 		cc, ok := c.clients[clientId]
