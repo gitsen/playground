@@ -11,6 +11,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 )
 
 const clientheader = "x-gitsen-client-header"
@@ -44,7 +45,14 @@ func send(stream Chat.Chat_BroadcastClient) {
 	for {
 		fmt.Print("> ")
 		if sc.Scan() {
-			stream.Send(&Chat.BroadcastRequest{Message: sc.Text()})
+			text := sc.Text()
+			if strings.Index(text, "@") == 0 {
+				parts := strings.Split(sc.Text(), " ")
+				stream.Send(&Chat.BroadcastRequest{Message: strings.Join(parts[1:], " "), ClientID: parts[0][1:]})
+			} else {
+				stream.Send(&Chat.BroadcastRequest{Message: text})
+			}
+
 		} else {
 			panic(fmt.Sprintf("Error reading from terminal %+v", sc.Err()))
 		}

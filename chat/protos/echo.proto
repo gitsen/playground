@@ -11,10 +11,12 @@ message RegisterResponse {
 
 message BroadcastRequest {
     string message = 1;
+    string clientID = 2;
 }
 
 message BroadcastResponse {
     string message = 1;
+    string clientId = 2;
 }
 
 service Chat {
